@@ -1,11 +1,4 @@
-const User = require("../models/User");
-const Profile = require("../models/Profile");
-const mailSender = require("../utils/MailSender");
 const bcrypt = require("bcrypt");
-const OTP = require("../models/OTP");
-const { uploadFileToCloudinary } = require("../utils/imageUploader");
-
-const bcrypt = require('bcrypt');
 const User = require('../models/userSchema');
 const Investor = require('../models/investorSchema');
 const StartupOwner = require('../models/startupSchema');
@@ -20,7 +13,7 @@ exports.addUser = async (req, res) => {
                 message: "Fill all required details"
             });
         }
-
+        
         if (password !== confirmPassword) {
             return res.status(400).json({
                 success: false,
@@ -93,7 +86,7 @@ exports.getSingleUser = async (req, res) => {
             });
         }
 
-        userProfile.password = undefined; 
+        userProfile.password = undefined;
 
         return res.status(200).json({
             success: true,

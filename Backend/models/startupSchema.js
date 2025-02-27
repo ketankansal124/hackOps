@@ -1,4 +1,5 @@
-const User = require('./User');
+const mongoose = require('mongoose');
+const User = require('./userSchema');
 
 const StartupOwnerSchema = new mongoose.Schema({
     startup_name: { type: String, required: true },
@@ -29,5 +30,5 @@ const StartupOwnerSchema = new mongoose.Schema({
     received_offer: { type: Boolean, default: false }
 });
 
-const StartupOwner = User.discriminator('startup_owner', StartupOwnerSchema);
+const StartupOwner = User.discriminator('startup', StartupOwnerSchema);
 module.exports = StartupOwner;

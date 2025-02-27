@@ -1,17 +1,12 @@
-const User = require("../models/User");
+const User = require("../models/userSchema");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 require("dotenv").config();
 const otpGenerator = require("otp-generator");
 const OTP = require("../models/OTP");
-const mailSender = require("../utils/MailSender");
-const emailTemplate = require("../mail/templates/emailVerification");
-const { contactUsEmail } = require("../mail/templates/contactForm");
-const { contactUsOwnerEmail } = require("../mail/templates/contactOwner");
 
-const User = require("../models/User");
-const Investor = require("../models/Investor");
-const StartupOwner = require("../models/StartupOwner");
+const Investor = require("../models/investorSchema");
+const StartupOwner = require("../models/startupSchema");
 
 exports.login = async (req, res) => {
     try {
@@ -142,8 +137,8 @@ exports.sendOTP = async (req, res) => {
         // Store OTP in the database
         await OTP.create({ email, otp: hashedOTP });
 
-        // Send OTP via email
-        await mailSender(email, "Verification Email", emailTemplate(otp));
+        // // Send OTP via email
+        // await mailSender(email, "Verification Email", emailTemplate(otp));
 
         return res.status(202).json({
             success: true,
@@ -257,12 +252,12 @@ exports.changePassword = async (req, res) => {
         user.password = await bcrypt.hash(newPassword, 10);
         await user.save();
 
-        // Notify user via email
-        await mailSender(
-            email,
-            "Password Changed",
-            `<p>Dear ${user.firstName} ${user.lastName}, Your password has been changed successfully.</p>`
-        );
+        // // Notify user via email
+        // await mailSender(
+        //     email,
+        //     "Password Changed",
+        //     `<p>Dear ${user.firstName} ${user.lastName}, Your password has been changed successfully.</p>`
+        // );
 
         return res.status(200).json({
             success: true,
@@ -291,10 +286,10 @@ exports.contactUs = async (req, res) => {
         const fullName = lastName ? `${firstName} ${lastName}` : firstName;
 
         // Send acknowledgment email to the user
-        await mailSender(email, "Thank You for Contacting Us", contactUsEmail(email, fullName, message));
+        // await mailSender(email, "Thank You for Contacting Us", contactUsEmail(email, fullName, message));
 
         // Notify admin/owner
-        await mailSender(process.env.OWNER_MAILS, "New Contact Submission", contactUsOwnerEmail(fullName, email, message));
+        // await mailSender(process.env.OWNER_MAILS, "New Contact Submission", contactUsOwnerEmail(fullName, email, message));
 
         return res.status(200).json({
             success: true,
