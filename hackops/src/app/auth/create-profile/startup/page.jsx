@@ -162,7 +162,7 @@ function ProfileForm({ role = "startup", onSubmit }) {
             type="file"
             accept="image/*"
             onChange={handleFileUpload}
-            className="rounded-lg border border-gray-200 px-4 py-2"
+            className="rounded-lg border text-black border-gray-200 px-4 py-2"
           />
         </div>
       </div>
@@ -170,14 +170,14 @@ function ProfileForm({ role = "startup", onSubmit }) {
       {fields.map((field) => (
         <div key={field.name} className="space-y-2">
           <label className="block text-sm font-medium text-gray-700">{field.label}</label>
-          <div className="overflow-hidden rounded-lg border border-gray-200 bg-white focus-within:border-[#357AFF] focus-within:ring-1 focus-within:ring-[#357AFF]">
+          <div className="overflow-hidden text-black rounded-lg border border-gray-200 bg-white focus-within:border-[#357AFF] focus-within:ring-1 focus-within:ring-[#357AFF]">
             {field.type === "select" ? (
               <select
                 name={field.name}
                 required={field.required}
                 multiple={field.multiple}
                 onChange={handleInputChange}
-                className="w-full px-4 py-3 text-lg outline-none"
+                className="w-full text-black px-4 py-3 text-lg outline-none"
               >
                 <option value="">{`Select ${field.label}`}</option>
                 {field.options.map((option) => (
@@ -191,7 +191,7 @@ function ProfileForm({ role = "startup", onSubmit }) {
                 name={field.name}
                 required={field.required}
                 onChange={handleInputChange}
-                className="w-full px-4 py-3 text-lg outline-none"
+                className="w-full text-black px-4 py-3 text-lg outline-none"
                 rows={4}
               />
             ) : (
@@ -200,7 +200,7 @@ function ProfileForm({ role = "startup", onSubmit }) {
                 name={field.name}
                 required={field.required}
                 onChange={handleInputChange}
-                className="w-full px-4 py-3 text-lg outline-none"
+                className="w-full text-black px-4 py-3 text-lg outline-none"
               />
             )}
           </div>

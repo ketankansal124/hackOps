@@ -1,228 +1,161 @@
+// File: /app/dashboard/page.js
 "use client";
-import React, { useState, useEffect } from "react";
-import { useSession, signOut } from "next-auth/react";
-import MatchCard from "../components/match-card";
+
+import React, { useState, useEffect } from 'react';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { auth, db } from '@/api/lib/firebaseConfig';
+import { useRouter } from 'next/navigation';
+import { getDoc, doc, collection, query, where, getDocs } from 'firebase/firestore';
 
 export default function Dashboard() {
-  const { data: session, status } = useSession();
-  const [role, setRole] = useState(null);
-  const [matches, setMatches] = useState([]);
+  const [user, setUser] = useState(null);
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [sortBy, setSortBy] = useState("matchScore");
-  const [filterIndustry, setFilterIndustry] = useState("all");
+  const router = useRouter();
 
-  // Update role once session is available
   useEffect(() => {
-    if (session?.user) {
-      setRole(session.user.role || "startup");
-    }
-  }, [session]);
-
-  // Fetch matches when role is set
-  useEffect(() => {
-    if (role) {
-      const fetchMatches = async () => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (currentUser) {
         try {
-          const response = await fetch("/api/get-matches", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ query: { role } }),
-          });
-
-          if (!response.ok) {
-            throw new Error("Failed to fetch matches");
+          // Get user data
+          const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+          
+          if (!userDoc.exists()) {
+            setError('User not found');
+            setLoading(false);
+            return;
           }
-
-          const data = await response.json();
-          setMatches(data.matches || []);
+          
+          const userData = userDoc.data();
+          setUser({ uid: currentUser.uid, email: currentUser.email, ...userData });
+          
+          // Get profile data
+          const collectionName = userData.role === 'startup' ? 'startupProfiles' : 'investorProfiles';
+          const profileDoc = await getDoc(doc(db, collectionName, currentUser.uid));
+          
+          if (profileDoc.exists()) {
+            setProfile(profileDoc.data());
+          }
+          
+          setLoading(false);
         } catch (err) {
           console.error(err);
-          setError("Failed to load matches");
+          setError('Failed to fetch user data');
+          setLoading(false);
         }
-      };
+      } else {
+        // No user is signed in, redirect to sign in
+        router.push('auth/signin');
+      }
+    });
 
-      fetchMatches();
-    }
-  }, [role]);
+    return () => unsubscribe();
+  }, [router]);
 
   const handleSignOut = async () => {
     try {
-      await signOut({
-        callbackUrl: "/account/signin",
-        redirect: true,
-      });
+      await signOut(auth);
+      router.push('/signin');
     } catch (err) {
-      console.error("Failed to sign out:", err);
-      setError("Failed to sign out. Please try again.");
+      console.error(err);
+      setError('Failed to sign out');
     }
   };
 
-  // Show loading state while session is being determined
-  if (status === "loading") {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50">
-        <div className="text-xl font-medium text-gray-600">Loading...</div>
-      </div>
-    );
-  }
-
-  // Redirect unauthenticated users
-  if (!session) {
+  if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50">
         <div className="text-center">
-          <div className="mb-4 text-xl font-medium text-gray-600">
-            Please sign in to view your dashboard
-          </div>
-          <a
-            href="/auth/signin"
-            className="text-[#357AFF] hover:text-[#2E69DE]"
-          >
-            Sign In
-          </a>
+          <div className="spinner mb-4 h-12 w-12 animate-spin rounded-full border-4 border-t-4 border-blue-500 border-t-transparent"></div>
+          <p className="text-lg font-medium text-gray-700">Loading...</p>
         </div>
       </div>
     );
   }
 
-  const user = session.user;
-
-  // Filter and sort matches
-  const filteredMatches = matches
-    .filter(
-      (match) => filterIndustry === "all" || match.industry === filterIndustry
-    )
-    .sort((a, b) => {
-      if (sortBy === "matchScore") return b.matchScore - a.matchScore;
-      if (sortBy === "recent")
-        return new Date(b.createdAt) - new Date(a.createdAt);
-      return 0;
-    });
+  if (error) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50 px-4">
+        <div className="w-full max-w-md rounded-xl bg-white p-8 shadow-lg">
+          <div className="rounded-lg bg-red-50 p-4 text-red-500">
+            <h3 className="text-lg font-medium">Error</h3>
+            <p>{error}</p>
+            <button
+              onClick={() => router.push('/signin')}
+              className="mt-4 rounded-lg bg-red-500 px-4 py-2 text-white hover:bg-red-600"
+            >
+              Go to Sign In
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-8">
-      <div className="mx-auto max-w-7xl">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-6">
+      <div className="mx-auto max-w-6xl">
         <div className="mb-8 flex items-center justify-between">
-          <h1 className="text-3xl font-bold text-gray-800">
-            {role === "startup" ? "Startup Dashboard" : "Investor Dashboard"}
-          </h1>
+          <h1 className="text-3xl font-bold text-gray-800">Dashboard</h1>
           <button
             onClick={handleSignOut}
-            className="rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-200"
+            className="rounded-lg bg-gray-200 px-4 py-2 text-gray-700 hover:bg-gray-300"
           >
             Sign Out
           </button>
         </div>
 
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-          <div className="col-span-1 space-y-6">
-            <div className="rounded-xl bg-white p-6 shadow-lg">
-              <h2 className="mb-4 text-xl font-semibold text-gray-800">
-                {role === "startup" ? "Company Profile" : "Investment Profile"}
-              </h2>
-              <div className="space-y-4">
-                <div className="flex items-center gap-4">
-                  <div className="h-16 w-16 rounded-full bg-gray-100">
-                    <i className="fas fa-building text-gray-400"></i>
-                  </div>
-                  <div>
-                    <div className="font-medium text-gray-800">{user.name}</div>
-                    <div className="text-sm text-gray-500">{user.email}</div>
-                  </div>
-                </div>
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          <div className="rounded-xl bg-white p-6 shadow-md">
+            <h2 className="mb-4 text-xl font-semibold">Account Information</h2>
+            <div className="space-y-2">
+              <p><span className="font-medium">Email:</span> {user?.email}</p>
+              <p><span className="font-medium">Role:</span> {user?.role}</p>
+              <p><span className="font-medium">Account Created:</span> {user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}</p>
+            </div>
+          </div>
+
+          <div className="rounded-xl bg-white p-6 shadow-md">
+            <h2 className="mb-4 text-xl font-semibold">Profile Summary</h2>
+            {profile ? (
+              <div className="space-y-2">
+                {user?.role === 'startup' ? (
+                  <>
+                    <p><span className="font-medium">Company:</span> {profile.companyName}</p>
+                    <p><span className="font-medium">Industry:</span> {profile.industry}</p>
+                    <p><span className="font-medium">Funding Stage:</span> {profile.fundingStage}</p>
+                    <p><span className="font-medium">Location:</span> {profile.location}</p>
+                  </>
+                ) : (
+                  <>
+                    <p><span className="font-medium">Name:</span> {profile.name}</p>
+                    <p><span className="font-medium">Firm:</span> {profile.firmName}</p>
+                    <p><span className="font-medium">Check Size:</span> {profile.checkSize}</p>
+                    <p><span className="font-medium">Location:</span> {profile.location}</p>
+                  </>
+                )}
                 <button
-                  onClick={() => (window.location.href = "/onboarding")}
-                  className="w-full rounded-lg border border-[#357AFF] px-4 py-2 text-sm font-medium text-[#357AFF] transition-colors hover:bg-blue-50"
+                  onClick={() => router.push('/edit-profile')}
+                  className="mt-2 rounded-lg bg-[#357AFF] px-4 py-2 text-white hover:bg-[#2E69DE]"
                 >
                   Edit Profile
                 </button>
               </div>
-            </div>
-
-            {role === "investor" && (
-              <div className="rounded-xl bg-white p-6 shadow-lg">
-                <h2 className="mb-4 text-xl font-semibold text-gray-800">
-                  Deal Flow Metrics
-                </h2>
-                <div className="space-y-4">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Total Matches</span>
-                    <span className="font-medium text-gray-800">
-                      {matches.length}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">High Potential</span>
-                    <span className="font-medium text-gray-800">
-                      {matches.filter((m) => m.matchScore >= 90).length}
-                    </span>
-                  </div>
-                </div>
+            ) : (
+              <div>
+                <p className="text-gray-500">You haven't created a profile yet.</p>
+                <button
+                  onClick={() => router.push(`/create-profile?role=${user?.role}`)}
+                  className="mt-4 rounded-lg bg-[#357AFF] px-4 py-2 text-white hover:bg-[#2E69DE]"
+                >
+                  Create Profile
+                </button>
               </div>
             )}
           </div>
 
-          <div className="col-span-1 lg:col-span-2">
-            <div className="rounded-xl bg-white p-6 shadow-lg">
-              <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <h2 className="text-xl font-semibold text-gray-800">
-                  {role === "startup" ? "Investor Matches" : "Startup Matches"}
-                </h2>
-                <div className="flex flex-wrap gap-4">
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
-                    className="rounded-lg border border-gray-200 px-4 py-2 text-sm"
-                  >
-                    <option value="matchScore">Sort by Match Score</option>
-                    <option value="recent">Sort by Recent</option>
-                  </select>
-                  <select
-                    value={filterIndustry}
-                    onChange={(e) => setFilterIndustry(e.target.value)}
-                    className="rounded-lg border border-gray-200 px-4 py-2 text-sm"
-                  >
-                    <option value="all">All Industries</option>
-                    <option value="SaaS">SaaS</option>
-                    <option value="Fintech">Fintech</option>
-                    <option value="Healthcare">Healthcare</option>
-                    <option value="E-commerce">E-commerce</option>
-                    <option value="AI/ML">AI/ML</option>
-                  </select>
-                </div>
-              </div>
-
-              {error && (
-                <div className="mb-6 rounded-lg bg-red-50 p-3 text-sm text-red-500">
-                  {error}
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 gap-6">
-                {filteredMatches.map((match) => (
-                  <MatchCard
-                    key={match.id}
-                    type={role === "startup" ? "investor" : "startup"}
-                    logo={match.logo}
-                    name={match.name}
-                    matchScore={match.matchScore}
-                    industry={match.industry}
-                    location={match.location}
-                    fundingStage={match.fundingStage}
-                    checkSize={match.checkSize}
-                    description={match.description}
-                    onInterestClick={() => console.log("Interest in", match.id)}
-                    onScheduleClick={() => console.log("Schedule with", match.id)}
-                  />
-                ))}
-                {filteredMatches.length === 0 && (
-                  <div className="text-center text-gray-500">
-                    No matches found. Try adjusting your filters.
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+          {/* Add more dashboard sections here */}
         </div>
       </div>
     </div>
