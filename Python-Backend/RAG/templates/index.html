@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Upload & Search</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            text-align: center;
+        }
+        input, button {
+            margin-top: 10px;
+            padding: 8px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Upload a PDF</h2>
+    <input type="file" id="pdfFile">
+    <button onclick="uploadPDF()">Upload</button>
+    <p id="uploadStatus"></p>
+
+    <h2>Search</h2>
+    <input type="text" id="searchQuery" placeholder="Enter your query">
+    <button onclick="search()">Search</button>
+    <p id="searchResults"></p>
+
+    <script>
+        function uploadPDF() {
+            let fileInput = document.getElementById("pdfFile");
+            let formData = new FormData();
+            formData.append("file", fileInput.files[0]);
+
+            fetch("/upload", {
+                method: "POST",
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("uploadStatus").innerText = data.message;
+            })
+            .catch(error => console.error("Error:", error));
+        }
+
+        function search() {
+            let query = document.getElementById("searchQuery").value;
+            
+            fetch("/search", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ query: query })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("searchResults").innerText = JSON.stringify(data, null, 2);
+            })
+            .catch(error => console.error("Error:", error));
+        }
+    </script>
+
+</body>
+</html>
