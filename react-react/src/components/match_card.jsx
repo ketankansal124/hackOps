@@ -105,4 +105,4 @@ function CardComponent({
   );
 }
 
-export default MainComponent;
+export default CardComponent;
