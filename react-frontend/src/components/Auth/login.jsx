@@ -1,6 +1,7 @@
 import { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { BASE_URL } from "../../globalConstants";
 
 const Login = () => {
   const [formData, setFormData] = useState({ email: "", password: "" });
@@ -13,17 +14,10 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post("http://localhost:5000/api/auth/login", formData, {
+      const res = await axios.post(`${BASE_URL}/login`, formData, {
         withCredentials: true, // Ensures cookies are sent/received
       });
 
-      // Store token in browser cookie
-      document.cookie = `token=${res.data.token}; path=/; secure; samesite=strict`;
-
-      // Store role in a cookie as well
-      document.cookie = `role=${res.data.role}; path=/; secure; samesite=strict`;
-
-      // Redirect based on role
       if (res.data.role === "investor") {
         navigate("/investor/dashboard");
       } else {

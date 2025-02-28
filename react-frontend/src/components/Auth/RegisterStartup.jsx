@@ -1,6 +1,7 @@
 import { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { BASE_URL } from "../../globalConstants";
 
 const RegisterStartup = () => {
   const [formData, setFormData] = useState({
@@ -50,14 +51,16 @@ const RegisterStartup = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post("http://localhost:5000/api/auth/register", {
+      console.log(formData);
+      const res = await axios.post(`${BASE_URL}/signup`, {
         ...formData,
-        role: "investor",
+        role: "startup",
       });
       alert("Registration successful! Please log in.");
       navigate("/login");
     } catch (error) {
-      alert(error.response.data.message);
+      // alert(error.response.data.message);
+      console.log("Error");
     }
   };
 
@@ -75,7 +78,7 @@ const RegisterStartup = () => {
       <input type="number" name="female_presenters" placeholder="Female Presenters" onChange={handleChange} required />
       <input type="number" name="transgender" placeholder="Transgender Presenters" onChange={handleChange} required />
       <input type="number" name="couple_presenters" placeholder="Couple Presenters" onChange={handleChange} required />
-      <input type="number" name="pitchers_average_age" placeholder="Pitchers Average Age" onChange={handleChange} required />
+      <input type="string" name="pitchers_average_age" placeholder="Pitchers Average Age" onChange={handleChange} required />
       <input type="text" name="pitchers_state" placeholder="Pitchers' State" onChange={handleChange} required />
       <input type="number" name="yearly_revenue" placeholder="Yearly Revenue" onChange={handleChange} required />
       <input type="number" name="monthly_sales" placeholder="Monthly Sales" onChange={handleChange} required />
