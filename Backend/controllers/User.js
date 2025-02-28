@@ -102,6 +102,52 @@ exports.getSingleUser = async (req, res) => {
     }
 };
 
+exports.getAllUsers = async(req,res)=>{
+    try {
+        const { role } = req.query; // Role comes from query params (e.g., ?role=investor)
+
+        if (!role) {
+            return res.status(400).json({
+                success: false,
+                message: "Role parameter is required",
+            });
+        }
+
+        let users;
+
+        if (role === "investor") {
+            users = await Investor.find();
+        } else if (role === "startup") {
+            users = await StartupOwner.find();
+        } else {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid role",
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            users,
+        });
+    } catch (error) {
+        console.error("Error fetching users:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Some error occurred while fetching users",
+        });
+    }
+}
+
+const express = require("express");
+const User = require("../models/User"); // Assuming you have a common User model
+const Investor = require("../models/Investor"); // If investors have a separate schema
+const StartupOwner = require("../models/StartupOwner"); // If startups have a separate schema
+
+const router = express.Router();
+
+module.exports = router;
+
 
 exports.deleteProfile = async (req, res) => {
     try {

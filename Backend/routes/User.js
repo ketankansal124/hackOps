@@ -1,13 +1,13 @@
 const express = require("express");
 const router = express.Router();
 
-const { getSingleUser, deleteProfile, addUser } = require("../controllers/User");
+const { getSingleUser, deleteProfile, addUser, getAllUsers } = require("../controllers/User");
 const { login, sendOTP, verifyOtp, changePassword, contactUs, logout } = require("../controllers/Auth");
 const { auth } = require("../middlewares/auth");
 // const { resetPasswordToken, resetPassword } = require("../controllers/ResetPassword.js");
 
 router.get("/", auth, getSingleUser);
-
+router.get("/getAllUsers", getAllUsers);
 router.post("/signup", addUser);
 router.post("/login", login);
 router.post("/logout", logout);
